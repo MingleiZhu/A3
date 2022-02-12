@@ -27,4 +27,6 @@ vector <MyDB_PageReaderWriter> mergeIntoList (MyDB_BufferManagerPtr parent, MyDB
 void mergeIntoFile (MyDB_TableReaderWriter &sortIntoMe, vector <MyDB_RecordIteratorAltPtr> &mergeUs,
         function <bool ()> comparator, MyDB_RecordPtr lhs, MyDB_RecordPtr rhs);
 
+void appendRecord(MyDB_PageReaderWriter& curPage, vector<MyDB_PageReaderWriter>& pageList, MyDB_RecordPtr record, MyDB_BufferManagerPtr parent);
+
 #endif
