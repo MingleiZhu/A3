@@ -12,6 +12,7 @@ using namespace std;
 
 void mergeIntoFile (MyDB_TableReaderWriter &sortIntoMe, vector <MyDB_RecordIteratorAltPtr> &mergeUs,
                     function <bool ()> comparator, MyDB_RecordPtr lhs, MyDB_RecordPtr rhs) {
+    // define a comparator that we can use to compare MyDB_RecordIteratorAltPtr
     auto comp = [=] (MyDB_RecordIteratorAltPtr a, MyDB_RecordIteratorAltPtr b) {
         a->getCurrent(lhs);
         b->getCurrent(rhs);
@@ -105,17 +106,16 @@ void appendRecord(MyDB_PageReaderWriter& currentPage, vector<MyDB_PageReaderWrit
     }
 }
 
-vector<MyDB_PageReaderWriter> mergeSort(vector<MyDB_PageReaderWriter>& sortMe, MyDB_BufferManagerPtr bufferManager, function <bool ()> comparator, MyDB_RecordPtr lhs, MyDB_RecordPtr rhs) {
+void mergeSort(vector<MyDB_PageReaderWriter>& sortMe, MyDB_BufferManagerPtr bufferManager, function <bool ()> comparator, MyDB_RecordPtr lhs, MyDB_RecordPtr rhs) {
     if (sortMe.size() <= 1) {
-        return sortMe;
+        return;
     }
     else {
         vector<MyDB_PageReaderWriter> leftPart (sortMe.begin(), sortMe.begin() + (sortMe.size() / 2));
         vector<MyDB_PageReaderWriter> rightPart (sortMe.begin() + (sortMe.size() / 2), sortMe.end());
-        vector<MyDB_PageReaderWriter> sortedLeft = mergeSort(leftPart, bufferManager, comparator, lhs, rhs);
-        vector<MyDB_PageReaderWriter> sortedRight = mergeSort(rightPart, bufferManager, comparator, lhs, rhs);
-        vector<MyDB_PageReaderWriter> result = mergeIntoList(bufferManager, getIteratorAlt(sortedLeft), getIteratorAlt(sortedRight), comparator, lhs, rhs);
-        return result;
+        mergeSort(leftPart, bufferManager, comparator, lhs, rhs);
+        mergeSort(rightPart, bufferManager, comparator, lhs, rhs);
+        sortMe = mergeIntoList(bufferManager, getIteratorAlt(leftPart), getIteratorAlt(rightPart), comparator, lhs, rhs);
     }
 }
 
@@ -135,17 +135,17 @@ void sort (int runSize, MyDB_TableReaderWriter &sortMe, MyDB_TableReaderWriter &
             pageNum++;
         }
         // use mergesort to implement sort phase (sort a whole run)
-        vector<MyDB_PageReaderWriter> sortedRun = mergeSort(run, sortMe.getBufferMgr(), comparator, lhs, rhs);
+        mergeSort(run, sortMe.getBufferMgr(), comparator, lhs, rhs);
 
         //add current sorted run to the sortedRuns list
-        sortedRuns.push_back(getIteratorAlt(sortedRun));
+        sortedRuns.push_back(getIteratorAlt(run));
     }
 
     // below is the merge phase, merge all the sorted runs to a single file
     mergeIntoFile(sortIntoMe, sortedRuns, comparator, lhs, rhs);
 }
 
-// below is iterative version of mergesort, but its time complexity is worse
+// below is iterative version of mergesort
 
 //void sort (int runSize, MyDB_TableReaderWriter &sortMe, MyDB_TableReaderWriter &sortIntoMe,
 //           function <bool ()> comparator, MyDB_RecordPtr lhs, MyDB_RecordPtr rhs) {
